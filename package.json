@@ -11,6 +11,7 @@
     "build": "npm run build -w @flux/idl && npm run build -w @flux/runtime && npm run build -w @flux/webtransport && npm run build -w @flux/bench && npm run build -w @flux/users-api",
     "test": "npm run test -w @flux/idl && npm run test -w @flux/runtime",
     "bench": "npm run bench -w @flux/bench",
+    "bench:fair": "npm run bench:fair -w @flux/bench",
     "example": "npm run start -w @flux/users-api",
     "example:wt": "npm start -w @flux/webtransport-demo",
     "example:go": "cd go/fluxserver && go run .",
