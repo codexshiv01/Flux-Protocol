@@ -1,6 +1,6 @@
 {
   "name": "@flux/users-api",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -8,9 +8,9 @@
     "codegen": "npm run codegen -w @flux/idl -- --schema ../../schema/user.flux --out ./src/generated"
   },
   "dependencies": {
-    "@flux/idl": "0.1.0",
-    "@flux/runtime": "0.1.0",
-    "@flux/webtransport": "0.1.0"
+    "@flux/idl": "*",
+    "@flux/runtime": "*",
+    "@flux/webtransport": "*"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

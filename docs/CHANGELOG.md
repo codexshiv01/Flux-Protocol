@@ -2,6 +2,24 @@
 
 All notable changes to the Flux protocol and reference implementation.
 
+## [0.4.0] — 2026-07-27
+
+### Compression & WebTransport
+
+- **Smart compression**: prefer zstd → br → gzip when `Accept-Encoding` allows; skip under 512 bytes (`autoCompress`, `compressThreshold`)
+- **Shared dictionaries** (RFC 9842-style): `dictionaryFromSchema`, `GET /flux/dictionary`, `Content-Encoding: dcz`, client `Available-Dictionary` / `fetchDictionary`
+- **WebTransport demo**: `examples/webtransport-demo` (HTTPS + optional Http3Server)
+- Docs: `docs/WEBTRANSPORT.md`; HTTP/3 guide updated for compression
+
+## [0.3.0] — 2026-07-27
+
+### Network & client resilience
+
+- Client **resilience**: deadlines (`Flux-Timeout-Ms`), exponential backoff retries, request **hedging**, **retry budgets**, RFC 9218 `Priority` header
+- Presets: `idempotentReadResilience`, `hedgedReadResilience(delayMs)`
+- HTTP/3 edge guide: [`docs/HTTP3.md`](./HTTP3.md)
+- Deploy recipes: `deploy/caddy/Caddyfile`, `deploy/nginx/nginx-http3.conf` (Alt-Svc, early-data for GET only)
+
 ## [0.2.0] — 2026-07-27
 
 ### Production hardening

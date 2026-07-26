@@ -3,12 +3,13 @@ import { readFileSync, existsSync } from "node:fs";
 import { dirname, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFlux } from "@flux/idl";
-import { FluxServer, productionOptions } from "@flux/runtime";
+import { FluxServer, productionOptions, dictionaryFromSchema } from "@flux/runtime";
 import { sseFallbackUrl } from "@flux/webtransport";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(root, "../public");
 const schema = parseFlux(readFileSync(join(root, "../../../schema/user.flux"), "utf8"));
+const dictionary = dictionaryFromSchema(schema);
 
 const db = new Map([
   [
@@ -30,6 +31,7 @@ const flux =
     ? new FluxServer(
         productionOptions({
           schema,
+          dictionary,
           enableFlatbuffers: true,
           authenticate: async (req) => {
             // Demo production auth: Authorization: Bearer demo
@@ -39,7 +41,7 @@ const flux =
           },
         }),
       )
-    : new FluxServer({ schema, enableFlatbuffers: true, preferEncoding: "identity" });
+    : new FluxServer({ schema, enableFlatbuffers: true, preferEncoding: "identity", dictionary });
 
 flux.register("UserService", {
   async GetUser(input) {

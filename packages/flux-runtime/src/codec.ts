@@ -5,10 +5,19 @@ import {
   brotliCompressSync,
   brotliDecompressSync,
 } from "node:zlib";
-import { createRequire } from "node:module";
+import {
+  decodeDcb,
+  decodeDcz,
+  encodeDcb,
+  encodeDcz,
+  pickContentEncoding,
+  zstdAvailable,
+  zstdCompress,
+  zstdDecompress,
+  type FluxDictionary,
+  DEFAULT_COMPRESS_THRESHOLD,
+} from "./dictionary.js";
 import type { FluxRequest, FluxResponse } from "./types.js";
-
-const require = createRequire(import.meta.url);
 
 export type CodecName = "json" | "proto" | "flatbuffers";
 
@@ -199,52 +208,86 @@ export function etagFor(data: unknown): string {
   return `"flux-${dig}"`;
 }
 
-function tryZstdCompress(data: Uint8Array): Uint8Array | null {
-  try {
-    const zlib = require("node:zlib") as { zstdCompressSync?: (d: Uint8Array) => Buffer };
-    if (zlib.zstdCompressSync) return new Uint8Array(zlib.zstdCompressSync(data));
-  } catch {
-    /* unavailable */
-  }
-  return null;
-}
-
-function tryZstdDecompress(data: Uint8Array): Uint8Array | null {
-  try {
-    const zlib = require("node:zlib") as { zstdDecompressSync?: (d: Uint8Array) => Buffer };
-    if (zlib.zstdDecompressSync) return new Uint8Array(zlib.zstdDecompressSync(data));
-  } catch {
-    /* unavailable */
-  }
-  return null;
+export interface CompressOptions {
+  /** Force a specific encoding; `auto` picks from Accept-Encoding. */
+  encoding?: string;
+  acceptEncoding?: string | string[];
+  threshold?: number;
+  dictionary?: FluxDictionary;
+  /** When client advertised Available-Dictionary matching ours */
+  useDictionary?: boolean;
+  preferDictionaryEncoding?: "dcz" | "dcb";
 }
 
 export function compress(
   encoding: string | undefined,
   data: Uint8Array,
+  opts?: CompressOptions,
 ): { encoding: string; body: Uint8Array } {
-  const enc = (encoding ?? "identity").split(",")[0]?.trim().toLowerCase() ?? "identity";
+  if (opts?.useDictionary && opts.dictionary) {
+    const kind = opts.preferDictionaryEncoding ?? "dcz";
+    if (kind === "dcz" && zstdAvailable()) {
+      return { encoding: "dcz", body: encodeDcz(data, opts.dictionary) };
+    }
+    return { encoding: "dcb", body: encodeDcb(data, opts.dictionary) };
+  }
+
+  let enc = (encoding ?? opts?.encoding ?? "identity").split(",")[0]?.trim().toLowerCase() ?? "identity";
+  if (enc === "auto") {
+    enc = pickContentEncoding(
+      opts?.acceptEncoding,
+      data.byteLength,
+      opts?.threshold ?? DEFAULT_COMPRESS_THRESHOLD,
+    );
+  } else if (
+    enc !== "identity" &&
+    data.byteLength < (opts?.threshold ?? DEFAULT_COMPRESS_THRESHOLD) &&
+    encoding === undefined
+  ) {
+    // Only apply threshold when caller did not force an encoding string via first arg
+  }
+
+  // Explicit threshold skip when using auto-selected encodings from pickContentEncoding already handled.
+  if (enc === "identity") return { encoding: "identity", body: data };
   if (enc === "gzip") return { encoding: "gzip", body: gzipSync(data) };
   if (enc === "br") return { encoding: "br", body: brotliCompressSync(data) };
   if (enc === "zstd") {
-    const z = tryZstdCompress(data);
-    if (z) return { encoding: "zstd", body: z };
+    if (zstdAvailable()) return { encoding: "zstd", body: zstdCompress(data) };
     return { encoding: "gzip", body: gzipSync(data) };
+  }
+  if (enc === "dcz" && opts?.dictionary && zstdAvailable()) {
+    return { encoding: "dcz", body: encodeDcz(data, opts.dictionary) };
+  }
+  if (enc === "dcb" && opts?.dictionary) {
+    return { encoding: "dcb", body: encodeDcb(data, opts.dictionary) };
   }
   return { encoding: "identity", body: data };
 }
 
-export function decompress(encoding: string | undefined, data: Uint8Array): Uint8Array {
+export function decompress(
+  encoding: string | undefined,
+  data: Uint8Array,
+  dictionary?: FluxDictionary,
+): Uint8Array {
   if (!encoding || encoding === "identity" || data.byteLength === 0) return data;
   if (encoding === "gzip") return gunzipSync(data);
   if (encoding === "br") return brotliDecompressSync(data);
   if (encoding === "zstd") {
-    const z = tryZstdDecompress(data);
-    if (z) return z;
+    if (zstdAvailable()) return zstdDecompress(data);
     return gunzipSync(data);
+  }
+  if (encoding === "dcz") {
+    if (!dictionary) throw new Error("dcz requires dictionary");
+    return decodeDcz(data, dictionary);
+  }
+  if (encoding === "dcb") {
+    if (!dictionary) throw new Error("dcb requires dictionary");
+    return decodeDcb(data, dictionary);
   }
   return data;
 }
+
+export { pickContentEncoding, DEFAULT_COMPRESS_THRESHOLD, zstdAvailable };
 
 function isFluxRequest(v: unknown): v is FluxRequest {
   return !!v && typeof v === "object" && "input" in (v as object) && !("data" in (v as object));

@@ -4,7 +4,7 @@
 
 Flux combines the universality of **HTTP**, the typed procedures and streams of **gRPC**, and the precise field selection of **GraphQL** — without forcing you to run three stacks.
 
-[Documentation](./docs/README.md) · [Getting Started](./docs/getting-started.md) · [Compare protocols](./docs/comparison.md) · [Specification](./docs/SPEC.md)
+[Documentation](./docs/README.md) · [Getting Started](./docs/getting-started.md) · [Compare protocols](./docs/comparison.md) · [Benchmarks](./docs/BENCHMARKS.md) · [Specification](./docs/SPEC.md)
 
 ---
 
@@ -78,7 +78,7 @@ npm run bench
 
 ## Status
 
-**v0.2.0** — production-hardened reference runtime (auth hook, limits, rate limiting, CI).  
+**v0.4.0** — zstd auto-compress, shared dictionaries (`dcz`), HTTPS WebTransport demo, plus v0.3 resilience/HTTP3.  
 Wire protocol remains language-agnostic. Spec: [docs/SPEC.md](./docs/SPEC.md) · Production: [docs/PRODUCTION.md](./docs/PRODUCTION.md)
 
 ---

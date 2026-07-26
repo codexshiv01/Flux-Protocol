@@ -7,3 +7,4 @@ packages/flux-bench/results.json
 coverage/
 tmp-req.json
 tmp-batch.json
+examples/webtransport-demo/certs/*.pem

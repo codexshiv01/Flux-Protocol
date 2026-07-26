@@ -1,0 +1,27 @@
+{
+	# Flux edge: HTTP/1.1 + HTTP/2 + HTTP/3 → Node/Go origin
+	# Replace api.example.com and TLS paths for your environment.
+	# Run: caddy run --config deploy/caddy/Caddyfile
+
+	api.example.com {
+		protocols h1 h2 h3
+
+		encode zstd gzip
+
+		header {
+			Alt-Svc "h3=\":443\"; ma=86400"
+			Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		}
+
+		# Long-lived SSE / framed streams
+		reverse_proxy 127.0.0.1:8080 {
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			flush_interval -1
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+}

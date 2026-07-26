@@ -1,6 +1,6 @@
 {
   "name": "@flux/runtime",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "license": "MIT",
   "files": ["dist"],
   "type": "module",
@@ -17,7 +17,7 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
-    "@flux/idl": "0.1.0"
+    "@flux/idl": "*"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

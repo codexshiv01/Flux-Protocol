@@ -1,0 +1,59 @@
+{
+  "net": {
+    "rttMs": 40,
+    "mbps": 10
+  },
+  "n": 400,
+  "rows": [
+    {
+      "protocol": "REST full resource",
+      "scenario": "typical REST (over-fetch)",
+      "resBytes": 4336,
+      "reqBytes": 12,
+      "loopbackP50Ms": 0.837,
+      "loopbackRps": 1009.3,
+      "netP50Ms": 44.315,
+      "netRps": 22.6
+    },
+    {
+      "protocol": "REST selected fields",
+      "scenario": "same fields as Flux/GraphQL",
+      "resBytes": 454,
+      "reqBytes": 12,
+      "loopbackP50Ms": 0.697,
+      "loopbackRps": 1191.4,
+      "netP50Ms": 41.07,
+      "netRps": 24.3
+    },
+    {
+      "protocol": "GraphQL",
+      "scenario": "same selected fields",
+      "resBytes": 472,
+      "reqBytes": 59,
+      "loopbackP50Ms": 0.616,
+      "loopbackRps": 1339.3,
+      "netP50Ms": 41.041,
+      "netRps": 24.4
+    },
+    {
+      "protocol": "gRPC-like RPC",
+      "scenario": "typical gRPC (full message)",
+      "resBytes": 4336,
+      "reqBytes": 12,
+      "loopbackP50Ms": 0.61,
+      "loopbackRps": 1339.1,
+      "netP50Ms": 44.089,
+      "netRps": 22.7
+    },
+    {
+      "protocol": "Flux JSON+select",
+      "scenario": "same selected fields",
+      "resBytes": 501,
+      "reqBytes": 78,
+      "loopbackP50Ms": 0.659,
+      "loopbackRps": 1250.4,
+      "netP50Ms": 41.122,
+      "netRps": 24.3
+    }
+  ]
+}

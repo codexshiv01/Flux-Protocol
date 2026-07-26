@@ -18,8 +18,9 @@
   <h1>Flux Protocol — browser demo</h1>
   <p class="meta">
     Unary via <code>fetch</code>, streaming via <strong>SSE</strong>.
-    WebTransport is used when the browser + origin support it (HTTPS / WT endpoint);
-    otherwise SSE is the fallback (same Flux selection semantics).
+    For a real HTTPS WebTransport terminator, run
+    <code>npm run example:wt</code> (see <code>examples/webtransport-demo</code>).
+    Otherwise SSE is the Flux L3 fallback.
   </p>
   <div>
     <button id="btnUnary">GetUser (fetch)</button>

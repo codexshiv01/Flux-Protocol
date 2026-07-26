@@ -5,7 +5,9 @@ Flux can be run in **development** (open defaults) or **production** mode (`prod
 ## Production checklist
 
 - [ ] TLS terminated at the edge (required for browsers / WebTransport)
+- [ ] Prefer **HTTP/3** at the edge — see [HTTP/3 guide](./HTTP3.md) and `deploy/`
 - [ ] Use `productionOptions({ schema, authenticate })`
+- [ ] Clients: `idempotentReadResilience` (or custom retry/hedge) on safe GETs
 - [ ] Implement real `authenticate` (JWT/session) — do **not** trust `Flux-Roles` alone
 - [ ] Keep `strictApq: true` and preload allowlisted operations
 - [ ] Set reverse-proxy body size limits to match `maxBodyBytes`
@@ -57,7 +59,7 @@ createServer(createFluxHttpServer(flux)).listen(8080);
 
 ## What “production-ready” means here
 
-Flux **v0.2** provides the operational controls teams expect before putting an API on the public internet. You still own:
+Flux **v0.3** provides the operational controls teams expect before putting an API on the public internet, plus HTTP/3 edge guidance and client-side resilience. You still own:
 
 - Identity provider & secrets  
 - Multi-instance rate limiting (use Redis/edge limits at scale)  
@@ -71,3 +73,18 @@ npm test
 ```
 
 Includes production hardening tests: auth, body limits, strict APQ, batch caps, rate limits.
+Also compression/dictionary and client resilience tests in `@flux/runtime`.
+
+## Compression
+
+`productionOptions` sets `autoCompress: true`. Clients that send `Accept-Encoding: zstd, br, gzip` get compressed responses above 512 bytes. Attach a schema dictionary for APQ-shaped JSON:
+
+```ts
+import { dictionaryFromSchema, productionOptions, FluxServer } from "@flux/runtime";
+
+new FluxServer(productionOptions({
+  schema,
+  dictionary: dictionaryFromSchema(schema),
+  authenticate,
+}));
+```

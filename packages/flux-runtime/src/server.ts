@@ -12,6 +12,10 @@ import {
   type CodecName,
 } from "./codec.js";
 import {
+  formatUseAsDictionary,
+  parseAvailableDictionary,
+} from "./dictionary.js";
+import {
   clientKey,
   createRateLimiter,
   mergeAuthContext,
@@ -44,7 +48,18 @@ export interface FluxServerOptions {
   schema: FluxSchema;
   maxCost?: number;
   maxDepth?: number;
+  /**
+   * Forced Content-Encoding, or `auto` to pick zstd/br/gzip from Accept-Encoding
+   * above compressThreshold. Omit / `identity` to leave responses uncompressed
+   * (handy for local curl demos).
+   */
   preferEncoding?: string;
+  /** When true, negotiate compression like preferEncoding: "auto". */
+  autoCompress?: boolean;
+  /** Bodies smaller than this stay uncompressed (default 512). */
+  compressThreshold?: number;
+  /** RFC 9842-style shared dictionary for APQ/JSON shapes. */
+  dictionary?: import("./dictionary.js").FluxDictionary;
   enableFlatbuffers?: boolean;
   /** Reject unknown APQ ops unless pre-allowlisted */
   strictApq?: boolean;
@@ -115,6 +130,10 @@ export class FluxServer {
 
       const host = req.headers.host ?? "localhost";
       const url = new URL(req.url ?? "/", `http://${host}`);
+      if (url.pathname === "/flux/dictionary" || url.pathname.endsWith("/flux/dictionary")) {
+        this.serveDictionary(res);
+        return;
+      }
       if (url.pathname.endsWith("/flux.v1.$batch") || url.pathname.endsWith("/$batch")) {
         await this.handleBatch(req, res);
         return;
@@ -228,7 +247,7 @@ export class FluxServer {
       chunks.push(buf);
     }
     const raw = new Uint8Array(Buffer.concat(chunks));
-    return decompress(req.headers["content-encoding"], raw);
+    return decompress(req.headers["content-encoding"], raw, this.opts.dictionary);
   }
 
   private resolveSelect(envelope: FluxRequest): { select?: SelectionSet; error?: FluxError } {
@@ -265,13 +284,40 @@ export class FluxServer {
     return { select: undefined };
   }
 
-  private negotiateEncoding(req?: IncomingMessage): string | undefined {
-    // Prefer identity for curl/fetch simplicity unless caller asked for compression.
-    // (Browsers send Accept-Encoding; double-decoding with fetch is unsafe.)
-    if (this.opts.preferEncoding && this.opts.preferEncoding !== "identity") {
-      return this.opts.preferEncoding;
+  private serveDictionary(res: ServerResponse): void {
+    const dict = this.opts.dictionary;
+    if (!dict) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "no dictionary configured" }));
+      return;
     }
+    res.writeHead(200, {
+      "Content-Type": "application/octet-stream",
+      "Use-As-Dictionary": formatUseAsDictionary(dict),
+      "Dictionary-ID": dict.id,
+      "Cache-Control": "public, max-age=604800, immutable",
+      ETag: `"${dict.sha256}"`,
+    });
+    res.end(Buffer.from(dict.bytes));
+  }
+
+  private negotiateEncoding(req?: IncomingMessage, bodySize = 0): string | undefined {
+    const prefer = this.opts.preferEncoding;
+    if (prefer === "identity") return undefined;
+    const auto = this.opts.autoCompress || prefer === "auto";
+    if (auto || prefer === "auto") {
+      return "auto";
+    }
+    if (prefer && prefer !== "identity") return prefer;
+    void bodySize;
     return undefined;
+  }
+
+  private dictionaryMatch(req?: IncomingMessage): boolean {
+    const dict = this.opts.dictionary;
+    if (!dict || !req) return false;
+    const available = parseAvailableDictionary(req.headers["available-dictionary"]);
+    return available === dict.sha256;
   }
 
   private async handleUnaryPost(
@@ -588,16 +634,31 @@ export class FluxServer {
     etag?: string,
   ): void {
     const raw = encodeResponse(codec, body as FluxResponse);
-    const negotiated = this.negotiateEncoding(req);
-    const { encoding, body: encoded } = compress(negotiated, raw);
+    const negotiated = this.negotiateEncoding(req, raw.byteLength);
+    const useDict = this.dictionaryMatch(req);
+    const accept = req?.headers["accept-encoding"];
+    const acceptStr = Array.isArray(accept) ? accept.join(",") : String(accept ?? "");
+    const wantsDcz = acceptStr.toLowerCase().includes("dcz");
+    const { encoding, body: encoded } = compress(negotiated, raw, {
+      acceptEncoding: acceptStr || undefined,
+      threshold: this.opts.compressThreshold,
+      dictionary: this.opts.dictionary,
+      useDictionary: useDict && (wantsDcz || !!this.opts.dictionary),
+      preferDictionaryEncoding: "dcz",
+    });
     const headers: Record<string, string> = {
       "Content-Type": CONTENT_TYPES[codec],
       "Flux-Protocol-Version": "1",
+      Vary: "Accept-Encoding, Available-Dictionary",
     };
     if (encoding !== "identity") headers["Content-Encoding"] = encoding;
     if (typeof maxAge === "number") headers["Cache-Control"] = `public, max-age=${maxAge}`;
     if (etag) headers.ETag = etag;
     else if ("data" in body) headers.ETag = etagFor((body as FluxResponse).data);
+    if (this.opts.dictionary) {
+      headers["Use-As-Dictionary"] = formatUseAsDictionary(this.opts.dictionary);
+      headers.Link = `</flux/dictionary>; rel="compression-dictionary"`;
+    }
     this.applyTraceHeaders(headers, req);
     res.writeHead(status, headers);
     res.end(Buffer.from(encoded));

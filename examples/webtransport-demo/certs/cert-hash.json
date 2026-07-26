@@ -1,0 +1,6 @@
+{
+  "algorithm": "sha-256",
+  "sha256Hex": "0f51cf64a6051df4b3bd8e56d8b5384d6c08620e1c4e96038113098ba2e843f6",
+  "sha256Base64": "D1HPZKYFHfSzvY5W2LU4TWwIYg4cTpYDgRMJi6LoQ/Y=",
+  "note": "SHA-256 of DER certificate for WebTransport serverCertificateHashes"
+}

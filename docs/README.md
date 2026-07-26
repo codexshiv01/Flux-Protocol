@@ -15,6 +15,8 @@
 | Performance numbers | [Benchmarks](./BENCHMARKS.md) |
 | Security | [Security](./SECURITY.md) |
 | Production | [Production](./PRODUCTION.md) |
+| HTTP/3 edge | [HTTP/3 & network](./HTTP3.md) |
+| WebTransport | [WebTransport L3](./WEBTRANSPORT.md) |
 | FAQ | [FAQ](./faq.md) |
 | Changelog | [Changelog](./CHANGELOG.md) |
 | Roadmap | [Roadmap](./ROADMAP.md) |
@@ -31,4 +33,4 @@
 - **Binary path** when you need speed; JSON when you need debuggability  
 - **Modern streaming** with SSE today and WebTransport for bi-directional browser traffic  
 
-**Status:** v0.2 — production-hardened reference implementation (TypeScript). The wire protocol is language-agnostic.
+**Status:** v0.4 — production-hardened reference + compression dictionaries + WT demo (TypeScript). The wire protocol is language-agnostic.

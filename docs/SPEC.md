@@ -42,8 +42,10 @@ Optional routing prefix: `/api/flux.v1.UserService/GetUser`
 | `Flux-Protocol-Version` | req | Must be `1` |
 | `Content-Type` | req/res | See content types |
 | `Flux-Timeout-Ms` | req | Deadline in milliseconds |
-| `Content-Encoding` | either | `identity` \| `gzip` \| `br` \| `zstd` |
-| `Accept-Encoding` | req | Ordered preference list |
+| `Content-Encoding` | either | `identity` \| `gzip` \| `br` \| `zstd` \| `dcz` \| `dcb` |
+| `Accept-Encoding` | req | Ordered preference; with `autoCompress`, pick zstd→br→gzip above threshold |
+| `Available-Dictionary` | req | RFC 9842 dictionary hash when client has `/flux/dictionary` |
+| `Use-As-Dictionary` | res | Advertises shared dictionary for future responses |
 | `Cache-Control` | res | For idempotent GET responses |
 | `ETag` | res | Optional entity tag |
 | `traceparent` / `tracestate` | either | W3C / OpenTelemetry |

@@ -6,6 +6,7 @@
  * - Browser client helper using global WebTransport
  * - Server-side session handler interface + SSE fallback bridge
  * - Datagram helpers for @datagram procedures
+ * - acceptFluxWebTransportSession() bridge for Http3Server demos
  */
 
 import {
@@ -176,6 +177,55 @@ export function sseFallbackUrl(
   url.searchParams.set("message", JSON.stringify(input));
   if (select) url.searchParams.set("select", JSON.stringify(select));
   return url.toString();
+}
+
+export interface FluxHandlerBridge {
+  handleUnary(procedure: string, request: FluxRequest): Promise<FluxResponse>;
+  handleStream?(procedure: string, request: FluxRequest): AsyncIterable<FluxResponse>;
+  handleDatagram?(procedure: string, request: FluxRequest): Promise<void>;
+}
+
+export function createFluxWtSession(handlers: FluxHandlerBridge): FluxWebTransportSession {
+  return {
+    procedureFromUrl(url: string) {
+      try {
+        return new URL(url, "https://local").pathname.replace(/^\//, "") || null;
+      } catch {
+        return null;
+      }
+    },
+    handleUnary: (p, r) => handlers.handleUnary(p, r),
+    handleStream: async function* (p, r) {
+      if (!handlers.handleStream) {
+        yield await handlers.handleUnary(p, r);
+        return;
+      }
+      yield* handlers.handleStream(p, r);
+    },
+    handleDatagram: async (p, r) => {
+      await handlers.handleDatagram?.(p, r);
+    },
+  };
+}
+
+/** Accept bidirectional streams on a WT session and pump Flux envelopes. */
+export async function acceptFluxWebTransportSession(
+  session: {
+    incomingBidirectionalStreams: ReadableStream<{
+      readable: ReadableStream<Uint8Array>;
+      writable: WritableStream<Uint8Array>;
+    }>;
+  },
+  handlers: FluxHandlerBridge,
+  codec: CodecName = "json",
+): Promise<void> {
+  const fluxSession = createFluxWtSession(handlers);
+  const reader = session.incomingBidirectionalStreams.getReader();
+  while (true) {
+    const { done, value: stream } = await reader.read();
+    if (done) break;
+    void pumpBidirectionalStream(stream, fluxSession, codec).catch(() => undefined);
+  }
 }
 
 function asBufferSource(data: Uint8Array): Uint8Array<ArrayBuffer> {

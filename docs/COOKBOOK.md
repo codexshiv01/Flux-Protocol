@@ -116,6 +116,40 @@ const res = await client.call(
 console.log(res.data);
 ```
 
+### Resilient reads (retry / hedge / deadline)
+
+```ts
+import {
+  FluxClient,
+  idempotentReadResilience,
+  hedgedReadResilience,
+} from "@flux/runtime";
+
+const client = new FluxClient({
+  baseUrl: "https://api.example.com",
+  resilience: idempotentReadResilience, // timeout + retries + budget + Priority
+});
+
+// Safe GET path — retries/hedges only when idempotent
+await client.callGet("flux.v1.UserService/GetUser", { id: "u_1" }, { id: true, name: true });
+
+// Tail-latency hedge (~p95 delay)
+await client.callGet(
+  "flux.v1.UserService/GetUser",
+  { id: "u_1" },
+  { id: true },
+  hedgedReadResilience(40),
+);
+
+// Mutations stay single-shot unless you explicitly pass idempotent: true
+await client.call("flux.v1.UserService/Heartbeat", { ping: 1 }, undefined, {
+  timeoutMs: 2000,
+  priority: "u=3",
+});
+```
+
+Edge HTTP/3 + 0-RTT: [HTTP/3 guide](./HTTP3.md).
+
 ---
 
 ## Persist a selection (APQ)

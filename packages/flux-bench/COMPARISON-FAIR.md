@@ -1,5 +1,3 @@
-# Flux speed: fair comparison vs REST, GraphQL, gRPC
-
 # Fair speed comparison (same grounds)
 
 All protocols: **POST + JSON body parse**, same Node process, N=400.
@@ -35,4 +33,3 @@ Network model: **RTT=40ms**, **10 Mbps** applied to request+response bytes.
 | Flux vs GraphQL (same fields)? | Effectively tied for speed. |
 
 Generated: 2026-07-26T22:34:33.989Z
-
