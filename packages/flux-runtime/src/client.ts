@@ -2,7 +2,6 @@ import {
   CONTENT_TYPES,
   compress,
   decodeResponse,
-  decompress,
   encodeRequest,
   type CodecName,
 } from "./codec.js";
@@ -49,8 +48,8 @@ export class FluxClient {
       body: encoded as unknown as BodyInit,
     });
     const buf = new Uint8Array(await res.arrayBuffer());
-    const raw = decompress(res.headers.get("content-encoding") ?? undefined, buf);
-    return decodeResponse(codec, raw) as FluxResponse<TData>;
+    // Fetch API already decodes Content-Encoding; do not decompress again.
+    return decodeResponse(codec, buf) as FluxResponse<TData>;
   }
 
   async callGet<TInput extends object, TData>(
@@ -72,8 +71,7 @@ export class FluxClient {
     if (this.opts.roles?.length) headers["Flux-Roles"] = this.opts.roles.join(",");
     const res = await this.fetchFn(url, { method: "GET", headers });
     const buf = new Uint8Array(await res.arrayBuffer());
-    const raw = decompress(res.headers.get("content-encoding") ?? undefined, buf);
-    return decodeResponse(codec, raw) as FluxResponse<TData>;
+    return decodeResponse(codec, buf) as FluxResponse<TData>;
   }
 
   async *stream<TInput, TData>(

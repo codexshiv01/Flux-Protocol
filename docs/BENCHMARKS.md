@@ -18,8 +18,20 @@ npm run bench -w @flux/bench
 
 **Headline:** Flux JSON + selection is **~88% smaller** than full REST JSON for the fixture graph (501 vs 4336 response bytes), beating the plan target of ≥40%.
 
-Notes:
+## Lossy-network / WebTransport methodology
 
-- Encode/decode µs are CPU microbenchmarks on one machine; network RTT dominates in production.
-- Flux Protobuf codec is a compact tagged binary envelope (L1); FlatBuffers L4 remains opt-in via `enableFlatbuffers`.
+Production bi-di under loss is dominated by **transport**, not JSON vs Protobuf.
+
+Recommended simulation (document results when run):
+
+1. **Baseline:** SSE server-stream Flux WatchUser over HTTP/1.1 or H2; measure completion time and gaps with `tc netem` (Linux) or Clumsy (Windows) at 1–5% loss.
+2. **HTTP/3:** Terminate TLS+H3 at a proxy (Caddy/Cloudflare) in front of Flux; repeat.
+3. **WebTransport:** Point `@flux/webtransport` client at a WT-capable origin; compare stall time under the same loss profile. Expect WT/QUIC streams to recover per-stream without head-of-line blocking across unrelated streams.
+
+Reference adapters: `packages/flux-webtransport`. Browser demo: `http://localhost:8787/demo`.
+
+## Notes
+
+- Encode/decode µs are CPU microbenchmarks; network RTT dominates in production.
+- L1 uses real protobuf wire tags for envelopes; L4 uses distinct `FLFB` flat layout.
 - Re-run and refresh `packages/flux-bench/results.json` after changes.

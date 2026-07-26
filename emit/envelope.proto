@@ -1,0 +1,15 @@
+syntax = "proto3";
+package flux.envelope.v1;
+
+// Normative envelope messages for application/flux+proto
+message FluxRequest {
+  bytes input_json = 1;
+  bytes select_json = 2;
+  string op = 3;
+}
+
+message FluxResponse {
+  bytes data_json = 1;
+  bytes error_json = 2;
+  bytes extensions_json = 3;
+}

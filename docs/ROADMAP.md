@@ -5,13 +5,20 @@
 | 0 | RATIONALE + SUPPORTABILITY | Done |
 | 1 | SPEC v0.1 | Done |
 | 2 | L0/L1 runtime MVP (JSON + Protobuf unary, GET, APQ) | Done |
-| 3 | Speed pack (zstd/gzip/br, batch, benches) | Done |
-| 4 | WebTransport L3 + SSE fallback | Done (adapters + SSE) |
-| 5 | FlatBuffers L4 (optional flag) | Scaffolded (`enableFlatbuffers`) |
-| 6 | Ecosystem (OpenAPI emit, lint, Go notes, cookbook) | Done |
+| 3 | Speed pack (compression, batch, benches) | Done |
+| 4 | WebTransport L3 + SSE fallback + browser demo | Done |
+| 5 | FlatBuffers L4 distinct codec (`FLFB`) | Done |
+| 6 | Ecosystem (OpenAPI, lint, cookbook, Go server) | Done |
+| — | ETag / If-None-Match | Done |
+| — | OpenTelemetry `traceparent` propagation | Done |
+| — | Strict APQ allowlist mode | Done |
+| — | Real protobuf envelope wire format | Done |
 
-## Near-term
+| — | Production hardening (auth, limits, rate limit, CI) | Done (v0.2) |
 
-1. Harden selection typing in codegen for partial selects.
-2. Full Go wire-compatible server (see `docs/GO.md`).
-3. Lossy-network WebTransport vs H2 comparison.
+## Follow-ups (post-v0.2)
+
+1. Multi-instance rate limiting (Redis/edge)
+2. Expand Go server to proto + streams
+3. Formal security audit for regulated use
+4. Publish `@flux/*` packages to npm with provenance

@@ -1,12 +1,13 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { dirname, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFlux } from "@flux/idl";
-import { FluxServer } from "@flux/runtime";
+import { FluxServer, productionOptions } from "@flux/runtime";
 import { sseFallbackUrl } from "@flux/webtransport";
 
 const root = dirname(fileURLToPath(import.meta.url));
+const publicDir = join(root, "../public");
 const schema = parseFlux(readFileSync(join(root, "../../../schema/user.flux"), "utf8"));
 
 const db = new Map([
@@ -24,7 +25,21 @@ const db = new Map([
   ],
 ]);
 
-const flux = new FluxServer({ schema, enableFlatbuffers: true, preferEncoding: "identity" });
+const flux =
+  process.env.FLUX_PRODUCTION === "1"
+    ? new FluxServer(
+        productionOptions({
+          schema,
+          enableFlatbuffers: true,
+          authenticate: async (req) => {
+            // Demo production auth: Authorization: Bearer demo
+            const auth = req.headers.authorization;
+            if (auth === "Bearer demo") return { roles: ["admin"], principal: "demo" };
+            return null;
+          },
+        }),
+      )
+    : new FluxServer({ schema, enableFlatbuffers: true, preferEncoding: "identity" });
 
 flux.register("UserService", {
   async GetUser(input) {
@@ -51,14 +66,33 @@ flux.register("UserService", {
   },
 });
 
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript",
+  ".css": "text/css",
+  ".json": "application/json",
+};
+
+function serveStatic(req: IncomingMessage, res: ServerResponse): boolean {
+  let path = req.url?.split("?")[0] ?? "/";
+  if (path === "/" || path === "/demo") path = "/index.html";
+  const file = join(publicDir, path);
+  if (!file.startsWith(publicDir) || !existsSync(file)) return false;
+  const body = readFileSync(file);
+  res.writeHead(200, { "Content-Type": MIME[extname(file)] ?? "application/octet-stream" });
+  res.end(body);
+  return true;
+}
+
 const port = Number(process.env.PORT ?? 8787);
-const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-  if (req.url === "/" || req.url === "/health") {
+const server = createServer((req, res) => {
+  if (req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
         ok: true,
         protocol: "flux/1",
+        demo: "/demo",
         docs: "/docs",
         sseExample: sseFallbackUrl(
           `http://localhost:${port}/`,
@@ -66,17 +100,19 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
           { id: "u_1" },
           { id: true, name: true },
         ),
+        webtransport: {
+          status: "client-adapters-shipped",
+          note: "Use @flux/webtransport; browsers need HTTPS WT terminator. SSE is the L3 fallback.",
+        },
       }),
     );
     return;
   }
+  if (serveStatic(req, res)) return;
   void flux.handle(req, res);
 });
 
 server.listen(port, () => {
   console.log(`Flux users-api listening on http://localhost:${port}`);
-  console.log(`Try:`);
-  console.log(
-    `  curl -sS -X POST http://localhost:${port}/flux.v1.UserService/GetUser -H "Content-Type: application/flux+json" -H "Flux-Protocol-Version: 1" -d "{\\"input\\":{\\"id\\":\\"u_1\\"},\\"select\\":{\\"id\\":true,\\"name\\":true,\\"posts\\":{\\"title\\":true}}}"`,
-  );
+  console.log(`Browser demo: http://localhost:${port}/demo`);
 });

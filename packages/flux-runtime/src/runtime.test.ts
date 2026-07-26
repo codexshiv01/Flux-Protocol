@@ -5,20 +5,36 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFlux } from "@flux/idl";
-import { FluxServer, createFluxHttpServer, FluxClient, encodeProto, decodeProto, hashSelection } from "./index.js";
+import {
+  FluxServer,
+  createFluxHttpServer,
+  FluxClient,
+  encodeProtoRequest,
+  decodeProtoRequest,
+  encodeProtoResponse,
+  decodeProtoResponse,
+  encodeFlatbuffers,
+  decodeFlatbuffers,
+  hashSelection,
+  etagFor,
+} from "./index.js";
 
 const schemaPath = join(dirname(fileURLToPath(import.meta.url)), "../../../schema/user.flux");
 
 describe("flux-runtime", () => {
-  it("roundtrips proto codec", () => {
-    const value = { input: { id: "u_1" }, select: { id: true, name: true } };
-    const buf = encodeProto(value);
-    assert.deepEqual(decodeProto(buf), value);
+  it("roundtrips protobuf and flatbuffers codecs", () => {
+    const req = { input: { id: "u_1" }, select: { id: true as const, name: true as const }, op: "abc" };
+    assert.deepEqual(decodeProtoRequest(encodeProtoRequest(req)), req);
+    assert.deepEqual(decodeFlatbuffers(encodeFlatbuffers(req)), req);
+    const res = { data: { id: "u_1" }, error: null, extensions: { cost: 1 } };
+    assert.deepEqual(decodeProtoResponse(encodeProtoResponse(res)), res);
+    assert.deepEqual(decodeFlatbuffers(encodeFlatbuffers(res)), res);
+    assert.match(etagFor(res.data), /^"flux-/);
   });
 
-  it("serves unary JSON with selection and GET", async () => {
+  it("serves unary JSON with selection, GET, ETag, and APQ", async () => {
     const schema = parseFlux(readFileSync(schemaPath, "utf8"));
-    const flux = new FluxServer({ schema });
+    const flux = new FluxServer({ schema, enableFlatbuffers: true });
     flux.register("UserService", {
       GetUser: (input) => {
         const id = (input as { id: string }).id;
@@ -81,6 +97,30 @@ describe("flux-runtime", () => {
       { id: true, name: true },
     );
     assert.equal((protoRes.data as { id: string }).id, "u_1");
+
+    const fbClient = new FluxClient({ baseUrl, codec: "flatbuffers" });
+    const fbRes = await fbClient.call(
+      "flux.v1.UserService/GetUser",
+      { id: "u_1" },
+      { id: true, name: true },
+    );
+    assert.equal((fbRes.data as { name: string }).name, "Ada");
+
+    const getUrl = `${baseUrl}/flux.v1.UserService/GetUser?encoding=json&message=${encodeURIComponent(JSON.stringify({ id: "u_1" }))}&select=${encodeURIComponent(JSON.stringify({ id: true }))}`;
+    const etagRes = await fetch(getUrl, {
+      headers: {
+        "Flux-Protocol-Version": "1",
+        traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+      },
+    });
+    assert.equal(etagRes.status, 200);
+    assert.ok(etagRes.headers.get("etag"));
+    assert.equal(etagRes.headers.get("traceparent")?.startsWith("00-"), true);
+    const etag = etagRes.headers.get("etag")!;
+    const notModified = await fetch(getUrl, {
+      headers: { "If-None-Match": etag, "Flux-Protocol-Version": "1" },
+    });
+    assert.equal(notModified.status, 304);
 
     server.close();
   });

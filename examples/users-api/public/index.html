@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flux Protocol Demo</title>
+  <style>
+    :root { font-family: "Segoe UI", system-ui, sans-serif; color: #0f172a; background: #f8fafc; }
+    body { max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.5rem; }
+    button { margin: 0.25rem 0.5rem 0.25rem 0; padding: 0.5rem 0.9rem; cursor: pointer; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; overflow: auto; border-radius: 8px; min-height: 8rem; }
+    .meta { color: #64748b; font-size: 0.9rem; }
+    code { background: #e2e8f0; padding: 0.1rem 0.35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Flux Protocol — browser demo</h1>
+  <p class="meta">
+    Unary via <code>fetch</code>, streaming via <strong>SSE</strong>.
+    WebTransport is used when the browser + origin support it (HTTPS / WT endpoint);
+    otherwise SSE is the fallback (same Flux selection semantics).
+  </p>
+  <div>
+    <button id="btnUnary">GetUser (fetch)</button>
+    <button id="btnSse">WatchUser (SSE)</button>
+    <button id="btnWt">WatchUser (WebTransport)</button>
+  </div>
+  <pre id="out">Ready.</pre>
+  <script type="module">
+    const out = document.getElementById("out");
+    const log = (v) => { out.textContent = typeof v === "string" ? v : JSON.stringify(v, null, 2); };
+
+    document.getElementById("btnUnary").onclick = async () => {
+      log("Calling GetUser…");
+      const res = await fetch("/flux.v1.UserService/GetUser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/flux+json",
+          "Flux-Protocol-Version": "1",
+          "traceparent": "00-11111111111111111111111111111111-2222222222222222-01",
+        },
+        body: JSON.stringify({
+          input: { id: "u_1" },
+          select: { id: true, name: true, posts: { title: true } },
+        }),
+      });
+      log({ status: res.status, etag: res.headers.get("etag"), traceparent: res.headers.get("traceparent"), body: await res.json() });
+    };
+
+    document.getElementById("btnSse").onclick = async () => {
+      log("Opening SSE stream…");
+      const url = "/flux.v1.UserService/WatchUser?format=sse&message=" + encodeURIComponent(JSON.stringify({ id: "u_1" })) +
+        "&select=" + encodeURIComponent(JSON.stringify({ id: true, name: true }));
+      const es = new EventSource(url);
+      const events = [];
+      es.onmessage = (ev) => {
+        events.push(JSON.parse(ev.data));
+        log({ transport: "sse", events });
+      };
+      es.addEventListener("end", () => { es.close(); log({ transport: "sse", done: true, events }); });
+      es.onerror = () => { es.close(); };
+    };
+
+    document.getElementById("btnWt").onclick = async () => {
+      if (typeof WebTransport === "undefined") {
+        log("WebTransport not available in this browser — use SSE button (Flux L3 fallback).");
+        return;
+      }
+      // Demo servers rarely terminate WT on localhost HTTP; show capability probe + fallback.
+      try {
+        const url = location.origin.replace("http:", "https:") + "/flux-wt";
+        log({ note: "Attempting WebTransport", url, hint: "Requires HTTPS WT terminator; falling back message if it fails." });
+        const wt = new WebTransport(url);
+        await Promise.race([
+          wt.ready,
+          new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 1500)),
+        ]);
+        log({ transport: "webtransport", status: "connected" });
+        wt.close();
+      } catch (e) {
+        log({
+          transport: "webtransport",
+          available: true,
+          connected: false,
+          error: String(e.message || e),
+          fallback: "Use SSE WatchUser — same Flux select semantics (see @flux/webtransport sseFallbackUrl).",
+        });
+      }
+    };
+  </script>
+</body>
+</html>

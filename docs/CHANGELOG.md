@@ -2,6 +2,30 @@
 
 All notable changes to the Flux protocol and reference implementation.
 
+## [0.2.0] — 2026-07-27
+
+### Production hardening
+
+- `productionOptions()` preset (body limits, strict APQ, rate limits, protocol version required)
+- `authenticate` hook; `trustRoleHeader: false` by default in production preset
+- `maxBodyBytes`, `maxBatchSize`, in-memory rate limiter
+- GitHub Actions CI (Node 20/22)
+- Production guide: `docs/PRODUCTION.md`
+- Expanded automated tests for auth, limits, APQ allowlist, rate limiting
+
+## [0.1.1] — 2026-07-27
+
+### Added / completed toward plan parity
+
+- Real **protobuf wire** envelopes (`encodeProtoRequest` / `encodeProtoResponse`)
+- Distinct **FlatBuffers-style L4** codec (`FLFB` magic)
+- **ETag** + `If-None-Match` (304) on idempotent GET
+- **OpenTelemetry** `traceparent` / `tracestate` propagation
+- **Strict APQ** allowlist mode (`strictApq`)
+- **Go** unary JSON server (`go/fluxserver`)
+- Browser **demo** with fetch + SSE + WebTransport probe (`/demo`)
+- Lossy-network benchmark methodology in BENCHMARKS.md
+
 ## [0.1.0] — 2026-07-27
 
 ### Added

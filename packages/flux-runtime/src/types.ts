@@ -42,6 +42,11 @@ export interface FluxContext {
   headers: Record<string, string>;
   roles: string[];
   signal?: AbortSignal;
+  /** W3C trace context */
+  traceparent?: string;
+  tracestate?: string;
+  /** Authenticated principal id when authenticate() is configured */
+  principal?: string;
 }
 
 export function httpStatusFor(code: FluxErrorCode): number {

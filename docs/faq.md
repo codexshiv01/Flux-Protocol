@@ -30,7 +30,11 @@ Yes — `fetch` for unary and SSE for server streams. WebTransport adapters are 
 
 ## Why is the reference implementation in TypeScript?
 
-To ship browser + server demos quickly and prove curl/`fetch` supportability. The wire format is language-agnostic; Go is the planned second implementation ([GO.md](./GO.md)).
+To ship browser + server demos quickly and prove curl/`fetch` supportability. The wire format is language-agnostic. A **Go unary server** lives in [`go/fluxserver`](../go/fluxserver) (see [GO.md](./GO.md)).
+
+## Is the plan fully implemented?
+
+**v0.1.1** closes the documented gaps: real protobuf envelopes, FlatBuffers L4 layout, ETag, OTEL propagation, strict APQ, Go server, browser demo + WebTransport probe, and lossy-network bench methodology. Native WebTransport *termination* still needs an HTTPS/QUIC edge in production; SSE remains the portable fallback.
 
 ## Can partners who only know REST still integrate?
 

@@ -14,6 +14,7 @@
 | Deploy & proxies | [Supportability](./SUPPORTABILITY.md) |
 | Performance numbers | [Benchmarks](./BENCHMARKS.md) |
 | Security | [Security](./SECURITY.md) |
+| Production | [Production](./PRODUCTION.md) |
 | FAQ | [FAQ](./faq.md) |
 | Changelog | [Changelog](./CHANGELOG.md) |
 | Roadmap | [Roadmap](./ROADMAP.md) |
@@ -30,4 +31,4 @@
 - **Binary path** when you need speed; JSON when you need debuggability  
 - **Modern streaming** with SSE today and WebTransport for bi-directional browser traffic  
 
-Status: **v0.1** reference implementation (TypeScript). The wire protocol is language-agnostic.
+**Status:** v0.2 — production-hardened reference implementation (TypeScript). The wire protocol is language-agnostic.

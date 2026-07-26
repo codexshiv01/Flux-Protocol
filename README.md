@@ -78,8 +78,8 @@ npm run bench
 
 ## Status
 
-**v0.1** — reference implementation in TypeScript; wire protocol is language-agnostic.  
-Spec: [docs/SPEC.md](./docs/SPEC.md) · Roadmap: [docs/ROADMAP.md](./docs/ROADMAP.md)
+**v0.2.0** — production-hardened reference runtime (auth hook, limits, rate limiting, CI).  
+Wire protocol remains language-agnostic. Spec: [docs/SPEC.md](./docs/SPEC.md) · Production: [docs/PRODUCTION.md](./docs/PRODUCTION.md)
 
 ---
 
