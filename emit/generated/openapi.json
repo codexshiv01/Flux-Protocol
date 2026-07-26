@@ -1,0 +1,297 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Flux flux.v1",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/flux.v1.UserService/GetUser": {
+      "post": {
+        "operationId": "UserService_GetUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/flux+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FluxRequest_GetUserInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flux unary response",
+            "content": {
+              "application/flux+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FluxResponse_User"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "UserService_GetUser_get",
+        "parameters": [
+          {
+            "name": "encoding",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "proto"
+              ]
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "op",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flux unary response",
+            "content": {
+              "application/flux+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FluxResponse_User"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flux.v1.UserService/WatchUser": {
+      "post": {
+        "operationId": "UserService_WatchUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/flux+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FluxRequest_WatchUserInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flux unary response",
+            "content": {
+              "application/flux+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FluxResponse_User"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flux.v1.UserService/Heartbeat": {
+      "post": {
+        "operationId": "UserService_Heartbeat",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/flux+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FluxRequest_HeartbeatInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flux unary response",
+            "content": {
+              "application/flux+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FluxResponse_HeartbeatInput"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "GetUserInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "FluxRequest_GetUserInput": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/GetUserInput"
+          },
+          "select": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "op": {
+            "type": "string"
+          }
+        }
+      },
+      "WatchUserInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "FluxRequest_WatchUserInput": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/WatchUserInput"
+          },
+          "select": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "op": {
+            "type": "string"
+          }
+        }
+      },
+      "HeartbeatInput": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientId"
+        ]
+      },
+      "FluxRequest_HeartbeatInput": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/HeartbeatInput"
+          },
+          "select": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "op": {
+            "type": "string"
+          }
+        }
+      },
+      "Post": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body"
+        ]
+      },
+      "FluxResponse_Post": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Post"
+          },
+          "error": {
+            "type": "object",
+            "nullable": true
+          },
+          "extensions": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Post"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "posts"
+        ]
+      },
+      "FluxResponse_User": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/User"
+          },
+          "error": {
+            "type": "object",
+            "nullable": true
+          },
+          "extensions": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}

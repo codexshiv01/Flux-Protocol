@@ -1,0 +1,24 @@
+{
+  "name": "flux-protocol",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Flux Protocol — supportable, fast, modern RPC + selection",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @flux/idl && npm run build -w @flux/runtime && npm run build -w @flux/webtransport && npm run build -w @flux/bench && npm run build -w @flux/users-api",
+    "test": "npm run test -w @flux/idl && npm run test -w @flux/runtime",
+    "bench": "npm run bench -w @flux/bench",
+    "example": "npm run start -w @flux/users-api",
+    "codegen": "npm run codegen -w @flux/idl -- --schema ../../schema/user.flux --out ../../examples/users-api/src/generated"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
+}
